@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CI/CD Final Project — Counter REST API
 
 **Owner:** Shreyaslad99  
@@ -63,3 +64,6 @@ The pipeline is a configuration template; it does not prove that your OpenShift 
 ## Evidence checklist
 
 See [`submission/EVIDENCE_CHECKLIST.md`](submission/EVIDENCE_CHECKLIST.md). Store only genuine logs/screenshots from your own GitHub Actions and OpenShift executions.
+=======
+# ci-cd-final-project
+>>>>>>> 833cce811dfa6e24c0f6a0c57c4f8e174138e231
