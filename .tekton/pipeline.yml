@@ -1,0 +1,89 @@
+# Template pipeline. Verify the installed cluster-task names and adjust registry,
+# repository URL, namespace, and deployment name to match your OpenShift project.
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-cd-final-project
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: Public Git repository URL
+    - name: git-revision
+      type: string
+      default: main
+    - name: image-reference
+      type: string
+      description: Full image reference in a registry your cluster can push to
+    - name: deployment-name
+      type: string
+      default: counter-api
+    - name: namespace
+      type: string
+      description: OpenShift project / namespace to deploy into
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: cleanup
+      taskRef:
+        name: cleanup
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: git-clone
+      runAfter: [cleanup]
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: lint
+      runAfter: [git-clone]
+      taskRef:
+        name: flake8
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: unit-tests
+      runAfter: [lint]
+      taskRef:
+        name: nose
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: build-image
+      runAfter: [unit-tests]
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      params:
+        - name: IMAGE
+          value: $(params.image-reference)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: deploy
+      runAfter: [build-image]
+      taskRef:
+        name: openshift-client
+        kind: ClusterTask
+      params:
+        - name: SCRIPT
+          value: |
+            oc project "$(params.namespace)"
+            oc set image "deployment/$(params.deployment-name)" "$(params.deployment-name)=$(params.image-reference)" || \
+              oc new-app "$(params.image-reference)" --name="$(params.deployment-name)"
+            oc rollout status "deployment/$(params.deployment-name)" --timeout=180s

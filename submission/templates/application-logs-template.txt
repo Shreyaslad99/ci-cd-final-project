@@ -1,0 +1,2 @@
+# TEMPLATE ONLY — replace this file's contents with logs copied from your real OpenShift pod.
+# The live pod should show the exact SERVICERUNNING message and port 8000 listener.
